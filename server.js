@@ -73,13 +73,10 @@ app.post("/api/add-torrent", (req, res) => {
     torrent = client.add(magnetURI);
   } catch (err) {
     console.error("Duplicate Torrent", err.message);
+  }
+
+  if (!torrent) {
     torrent = client.get(magnetURI);
-    if (!torrent) {
-      // If we can't get the torrent, return an error
-      return res.status(500).json({
-        error: `Failed to add torrent or fetch metadata: ${err.message}`,
-      });
-    }
   }
 
   // Event listener for when torrent metadata is ready.

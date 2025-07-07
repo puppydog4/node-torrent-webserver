@@ -68,15 +68,9 @@ app.post("/api/add-torrent", (req, res) => {
   }
 
   console.log("Adding torrent to backend:", magnetURI);
-  let torrent;
-  try {
-    torrent = client.add(magnetURI);
-  } catch (err) {
-    console.error("Duplicate Torrent", err.message);
-  }
-
+  let torrent = client.get(magnetURI); // Try to get existing torrent first
   if (!torrent) {
-    torrent = client.get(magnetURI);
+    torrent = client.add(magnetURI);
   }
 
   // Event listener for when torrent metadata is ready.

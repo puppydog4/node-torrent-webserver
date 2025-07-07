@@ -69,8 +69,11 @@ app.post("/api/add-torrent", (req, res) => {
 
   console.log("Adding torrent to backend:", magnetURI);
   let torrent = client.get(magnetURI);
-
-  if (!torrent) {
+  if (torrent) {
+    console.log("Torrent already exists in backend:", torrent.infoHash);
+    // If metadata is already available, respond immediately
+  } else {
+    torrent = client.add(magnetURI);
     torrent = client.add(magnetURI, (torrent) => {
       torrent.on("metadata", () => {
         console.log(
@@ -108,41 +111,8 @@ app.post("/api/add-torrent", (req, res) => {
     });
   }
 
-  // Event listener for when torrent metadata is ready.
-  // This is crucial for getting file names before full download.
-  torrent.on("metadata", () => {
-    console.log(
-      "Torrent metadata ready in backend:",
-      torrent.name,
-      torrent.infoHash
-    );
-    activeTorrents[torrent.infoHash] = torrent; // Store the torrent instance
-
-    // Respond with metadata (file names, paths, lengths)
-    if (!res.headersSent) {
-      // Ensure response hasn't been sent by a timeout
-      res.json({
-        infoHash: torrent.infoHash,
-        name: torrent.name,
-        files: torrent.files.map((f) => ({
-          name: f.name,
-          length: f.length,
-          path: f.path, // Path relative to the torrent root
-        })),
-      });
-    }
-  });
-
-  // Event listener for torrent-specific errors.
-  torrent.on("error", (err) => {
-    console.error("Torrent specific error in backend:", err.message);
-    if (!res.headersSent) {
-      // Only send error if response hasn't been sent
-      res.status(500).json({
-        error: `Failed to add torrent or fetch metadata: ${err.message}`,
-      });
-    }
-  });
+  // If the torrent is already being downloaded, we can wait for metadata
+  // to be available. The 'metadata' event will handle this.
 
   // Set a timeout for metadata fetching. If no metadata received within this time,
   // assume failure and clean up.

@@ -49,7 +49,7 @@ app.post("/api/add-torrent", (req, res) => {
 
   // Check if torrent is already active in the client
   const existingTorrent = client.get(magnetURI);
-  if (existingTorrent) {
+  if (existingTorrent.infoHash != undefined) {
     console.log("Torrent already active:", existingTorrent.infoHash);
     // If metadata is already available, respond immediately
     if (existingTorrent.metadata) {
@@ -68,7 +68,19 @@ app.post("/api/add-torrent", (req, res) => {
   }
 
   console.log("Adding torrent to backend:", magnetURI);
-  const torrent = client.add(magnetURI);
+  let torrent;
+  try {
+    torrent = client.add(magnetURI);
+  } catch (err) {
+    console.error("Duplicate Torrent", err.message);
+    torrent = client.get(magnetURI);
+    if (!torrent) {
+      // If we can't get the torrent, return an error
+      return res.status(500).json({
+        error: `Failed to add torrent or fetch metadata: ${err.message}`,
+      });
+    }
+  }
 
   // Event listener for when torrent metadata is ready.
   // This is crucial for getting file names before full download.

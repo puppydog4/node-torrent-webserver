@@ -85,7 +85,6 @@ app.post("/api/add-torrent", (req, res) => {
     }
     // If metadata is already available, respond immediately
   } else {
-    torrent = client.add(magnetURI);
     torrent = client.add(magnetURI, (torrent) => {
       torrent.on("metadata", () => {
         console.log(

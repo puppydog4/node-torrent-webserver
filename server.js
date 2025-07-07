@@ -40,7 +40,7 @@ client.on("error", (err) => {
  * Fetches metadata and returns file information to the frontend.
  * If the torrent is already being downloaded, it returns its existing metadata.
  */
-app.post("/api/add-torrent", (req, res) => {
+app.post("/api/add-torrent", async (req, res) => {
   const { magnetURI } = req.body;
 
   if (!magnetURI) {
@@ -67,8 +67,52 @@ app.post("/api/add-torrent", (req, res) => {
     // This scenario is handled by the 'metadata' event listener below.
   }
 
+  if (
+    currentActiveTorrentInfoHash &&
+    currentActiveTorrentInfoHash !== newTorrentInfoHash
+  ) {
+    const previousTorrent = client.get(currentActiveTorrentInfoHash);
+    if (previousTorrent) {
+      try {
+        // `destroy` removes the torrent from the client and cleans up files
+        previousTorrent.destroy(() => {
+          console.log(
+            `Removed previous torrent: ${currentActiveTorrentInfoHash}`
+          );
+        });
+      } catch (err) {
+        console.warn(
+          `Failed to destroy previous torrent ${currentActiveTorrentInfoHash}:`,
+          err.message
+        );
+      }
+    }
+  }
+
+  // Check if the torrent is already added (e.g., if user clicks "Select Tracks" multiple times for the same torrent)
+  let torrent = client.get(newTorrentInfoHash);
+  if (torrent) {
+    console.log(
+      `Torrent ${newTorrentInfoHash} already exists. Returning its info.`
+    );
+    currentActiveTorrentInfoHash = newTorrentInfoHash; // Update active torrent
+    // Ensure files are ready if the torrent was recently added but not fully processed
+    if (!torrent.ready) {
+      await new Promise((resolve) => torrent.on("ready", resolve));
+    }
+    return res.json({
+      infoHash: torrent.infoHash,
+      name: torrent.name,
+      files: torrent.files.map((file, index) => ({
+        name: file.name,
+        length: file.length,
+        path: file.path,
+        index: index, // Include index for streaming
+      })),
+    });
+  }
+
   console.log("Adding torrent to backend:", magnetURI);
-  const torrent = client.add(magnetURI);
 
   // Event listener for when torrent metadata is ready.
   // This is crucial for getting file names before full download.

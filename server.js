@@ -71,7 +71,7 @@ app.post("/api/add-torrent", (req, res) => {
   let torrent = client.get(magnetURI);
   if (torrent != undefined) {
     console.log("Torrent already exists in backend:", torrent.infoHash);
-    if (!res.headersSent) {
+    if (torrent.metadata) {
       // Ensure response hasn't been sent by a timeout
       res.json({
         infoHash: torrent.infoHash,

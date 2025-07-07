@@ -68,7 +68,8 @@ app.post("/api/add-torrent", (req, res) => {
   }
 
   console.log("Adding torrent to backend:", magnetURI);
-  let torrent = client.get(magnetURI); // Try to get existing torrent first
+  let torrent = client.get(magnetURI);
+
   if (!torrent) {
     torrent = client.add(magnetURI);
   }

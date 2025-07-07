@@ -1,0 +1,13 @@
+{
+  "name": "webtorrent-server",
+  "version": "1.0.0",
+  "description": "A simple WebTorrent server using Express and WebTorrent",
+  "main": "server.js",
+  "type": "module",
+
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "webtorrent": "^2.6.10"
+  }
+}
